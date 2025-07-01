@@ -27,7 +27,7 @@ def build_gemini_input_from_serp_results(serp_results):
 @router.post("/songs/manual", response_model=MoodResponse)
 async def analyze_manual_songs(request: ManualMoodRequest):
     # get mood snippets
-    song_dicts = [song.dict() for song in request.songs]
+    song_dicts = [song.model_dump() for song in request.songs]
     serp_results = await serpapi_client.get_song_mood(song_dicts)
     # classify mood and generate response
     songs_for_gemini = build_gemini_input_from_serp_results(serp_results)
