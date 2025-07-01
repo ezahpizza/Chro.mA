@@ -17,6 +17,7 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
 - Google Gemini (for LLM-powered research and planning)
 - Spotify API (for user music data)
 - Pydantic (for data validation)
+
 ## Music Mood Analysis Endpoints (`/songs`)
 
 - **POST `/songs/manual`**
@@ -49,7 +50,46 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
     - `count` (int, optional, default: 1, min: 1, max: 10): Number of recent tracks to analyze
   - **Response:** Same as above
 
-## Playlist Analysis Endpoint (`/playlist/analyze`)
+
+
+## Playlist Endpoints (`/playlist`)
+
+- **POST `/playlist/create`**
+  - Create a new Spotify playlist for the user and add tracks by searching for their title and artist.
+  - **Query Parameters:**
+    - `spotify_user_id` (str, required): Spotify user ID (used to look up the access token in the backend)
+  - **Request Body:**
+    ```json
+    {
+      "name": "string",
+      "description": "string",
+      "public": false,
+      "collaborative": false,
+      "tracks": [
+        { "title": "string", "artist": "string" }
+      ]
+    }
+    ```
+    - `name`: Name of the new playlist.
+    - `description`: Playlist description (optional).
+    - `public`: Whether the playlist is public (default: false).
+    - `collaborative`: Whether the playlist is collaborative (default: false).
+    - `tracks`: List of songs to add, each with a `title` and `artist`. The backend will search Spotify for each track and add the best match.
+
+  - **Response:**
+    ```json
+    {
+      "playlist_id": "string",
+      "external_url": "string",
+      "message": "Playlist created and tracks added successfully"
+    }
+    ```
+
+  - **Notes:**
+    - The backend will search for each track using the Spotify Search API and add the found tracks to the new playlist.
+    - The access token used must have the `playlist-modify-public` and/or `playlist-modify-private` scopes.
+    - If a track cannot be found, it will be skipped.
+    - If no valid tracks are found, the request will fail with a 400 error.
 
 - **POST `/playlist/analyze`**
   - Analyze the mood of a Spotify playlist by its ID.
@@ -112,7 +152,7 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
   }
   ```
 
-  ### Playlist Analysis Schemas
+  ### Playlist  Schemas
 
 - **PlaylistAnalysisRequest**
   ```json
@@ -141,7 +181,6 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
    ```powershell
    uvicorn main:app --reload
    ```
-
 
 ## Error Handling
 - All endpoints return a consistent JSON structure:
