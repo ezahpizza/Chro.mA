@@ -7,6 +7,7 @@ class SongInput(BaseModel):
 
 class ManualMoodRequest(BaseModel):
     songs: List[SongInput]
+    userid: str = None
 
 class MoodRecommendation(BaseModel):
     similar_mood: List[str]  
