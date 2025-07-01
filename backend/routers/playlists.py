@@ -1,6 +1,6 @@
 import httpx
 from fastapi import APIRouter, Query, Body, HTTPException
-from models.mood import PlaylistAnalysisResponse, SongInput, MoodResponse
+from models.mood import PlaylistAnalysisResponse, SongInput, MoodResponse, PlaylistCreateResponse, PlaylistCreateRequest
 from services.serpapi_client import SerpClient
 from services.gemini_client import GeminiClient
 from services.spotify_client import SpotifyClient
@@ -51,3 +51,48 @@ async def analyze_playlist(
         mood_response=mood_response
     )
 
+@router.post("/create", response_model=PlaylistCreateResponse)
+async def create_playlist(
+    req: PlaylistCreateRequest = Body(...),
+    spotify_user_id: str = Query(...)
+):
+    # retrieve access token
+    token_doc = await mongodb.get_token_collection().find_one({"spotify_user_id": spotify_user_id})
+    if not token_doc:
+        raise HTTPException(status_code=404, detail="Spotify user not found")
+
+    # Always fetch the user id from the access token (do not use the query param as user id)
+    user_id = await spotify_client.get_user_id(token_doc["access_token"])
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Failed to fetch Spotify user id")
+
+    # Get Spotify URIs for the provided tracks (input is tracks: List[SongInput])
+    track_dicts = [track.model_dump() for track in req.tracks]
+    uris = await spotify_client.get_uris_for_tracks(token_doc["access_token"], track_dicts)
+    if not uris:
+        raise HTTPException(status_code=400, detail="No valid Spotify URIs found for provided tracks")
+
+    # Create the playlist
+    playlist = await spotify_client.create_playlist(
+        access_token=token_doc["access_token"],
+        user_id=user_id,
+        name=req.name,
+        description=req.description,
+        public=req.public,
+        collaborative=getattr(req, "collaborative", False)
+    )
+    if not playlist or "id" not in playlist:
+        raise HTTPException(status_code=400, detail="Failed to create playlist")
+
+    playlist_id = playlist["id"]
+
+    # Add tracks to the playlist
+    success = await spotify_client.add_tracks_to_playlist(token_doc["access_token"], playlist_id, uris)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to add tracks to playlist")
+
+    return PlaylistCreateResponse(
+        playlist_id=playlist_id,
+        external_url=playlist.get("external_urls", {}).get("spotify", ""),
+        message="Playlist created and tracks added successfully"
+    )

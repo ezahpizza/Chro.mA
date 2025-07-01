@@ -8,6 +8,18 @@ class SongInput(BaseModel):
 class ManualMoodRequest(BaseModel):
     songs: List[SongInput]
 
+class PlaylistCreateRequest(BaseModel):
+    name: str
+    description: str = ""
+    public: bool = False
+    collaborative: bool = False  # <-- Add this line
+    tracks: List[SongInput]
+
+class PlaylistCreateResponse(BaseModel):
+    playlist_id: str
+    external_url: str
+    message: str
+
 class PlaylistAnalysisRequest(BaseModel):
     playlist_id: str
 

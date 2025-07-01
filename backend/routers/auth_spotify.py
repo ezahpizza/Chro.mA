@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 from config import settings
@@ -13,7 +14,7 @@ async def spotify_login():
         "client_id": settings.SPOTIFY_CLIENT_ID,
         "response_type": "code",
         "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
-        "scope": "user-read-currently-playing user-read-recently-played playlist-read-private",
+        "scope": "user-read-currently-playing user-read-recently-played playlist-read-private playlist-modify-private playlist-modify-public",
     }
     url = f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
     return RedirectResponse(url)
@@ -28,13 +29,18 @@ async def spotify_callback(code: str):
     user_data = await AuthUtils.get_spotify_user_profile(token_data["access_token"])
     if not user_data:
         raise HTTPException(status_code=400, detail="Failed to fetch Spotify user profile")
+    
+    
+    expires_in = token_data.get("expires_in")  # e.g., 3600
+    expires_at = int(time.time()) + expires_in if expires_in else 0
 
     tokens = {
         "spotify_user_id": user_data["id"],
         "access_token": token_data["access_token"],
         "refresh_token": token_data.get("refresh_token"),
-        "expires_at": token_data.get("expires_in"),
+        "expires_at": expires_at,
     }
+
     await mongodb.get_token_collection().update_one(
         {"spotify_user_id": user_data["id"]},
         {"$set": tokens},
