@@ -203,6 +203,20 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
   }
   ```
 
+
+## Session-Based Mood Analysis Caching
+The backend  supports session-based temporary storage for mood analysis results:
+
+Mood analysis endpoints (/songs/manual, /songs/spotify, /playlist/analyze) now return a session_id along with the mood analysis result.
+The session_id can be used with the /playlist/create endpoint to reuse the cached mood analysis, avoiding the need to re-analyze songs.
+The /playlist/create endpoint accepts a session_id (as a query parameter or in the request body) and an optional delete_after_use flag to purge the session data after playlist creation.
+Session data is stored in-memory and is not persisted in the database. It is suitable for single-process deployments.
+Example Workflow:
+
+Call a mood analysis endpoint and receive { ..., "session_id": "..." }.
+Use the returned session_id to create a playlist via /playlist/create?session_id=....
+(Optional) Set delete_after_use=true to remove the session data after use.
+
 ## Setup
 1. Clone the repository.
 2. Install dependencies:
