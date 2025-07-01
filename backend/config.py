@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import Optional
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -13,7 +13,13 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY : str = Field(..., env="GOOGLE_API_KEY")
     ENV: Optional[str] = Field("dev", env="ENV")
     DEBUG: bool = Field(False, env="DEBUG")
-    CORS_ORIGINS: str = Field(..., env="CORS_ORIGINS")
+    CORS_ORIGINS: List[str] = Field(
+        default=[
+            "http://localhost:8080",
+            "http://localhost:5173",
+        ],
+        env="CORS_ORIGINS"
+    )
     GEMINI_MODEL: str = Field("gemini-2.5-flash-preview-04-17", env="GEMINI_MODEL")
 
     class Config:
