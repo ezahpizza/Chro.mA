@@ -30,8 +30,8 @@ class PlaylistAnalysisResponse(BaseModel):
     mood_response: 'MoodResponse'
 
 class MoodRecommendation(BaseModel):
-    similar_mood: List[str]  
-    uplifting_alternatives: List[str]  
+    similar_mood: List[SongInput]  
+    uplifting_alternatives: List[SongInput]  
 
 class MoodResponse(BaseModel):
     inferred_mood: str

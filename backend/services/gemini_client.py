@@ -28,7 +28,7 @@ class GeminiClient:
                 "Given a list of songs, analyze their mood and emotional themes using web search snippets.",
                 "Classify the overall mood as one of: happy, neutral, sad, nostalgic, hopeful, anxious.",
                 "Suggest similar mood songs and uplifting alternatives.",
-                "Return a JSON object with keys: inferred_mood, summary, recommendations (with similar_mood and uplifting_alternatives), and message."
+                "Return a JSON object with keys: inferred_mood, summary, recommendations (with similar_mood and uplifting_alternatives as arrays of objects with title and artist), and message. Each song in recommendations must be an object: {\"title\": ..., \"artist\": ...}. Do not use string format for songs."
             ],
             model=Gemini(id=self.gemini_model),
             tools=[SerpApiTools(api_key=self.serpapi_key)],
@@ -60,7 +60,26 @@ class GeminiClient:
 
             try:
                 content = extract_json_from_markdown(result.content)
-                return json.loads(content)
+                data = json.loads(content)
+                def normalize_song_list(song_list):
+                    if song_list and isinstance(song_list[0], dict):
+                        return song_list
+                    result = []
+                    for s in song_list:
+                        if isinstance(s, dict):
+                            result.append(s)
+                        elif isinstance(s, str):
+                            if ' by ' in s:
+                                title, artist = s.split(' by ', 1)
+                                result.append({"title": title.strip(), "artist": artist.strip()})
+                            else:
+                                result.append({"title": s.strip(), "artist": ""})
+                    return result
+                if "recommendations" in data:
+                    rec = data["recommendations"]
+                    rec["similar_mood"] = normalize_song_list(rec.get("similar_mood", []))
+                    rec["uplifting_alternatives"] = normalize_song_list(rec.get("uplifting_alternatives", []))
+                return data
             except Exception as e:
                 logger.error(f"Failed to parse JSON from Gemini agent response. Error: {str(e)}, Raw output: {result.content}")
                 return {
@@ -85,22 +104,28 @@ class GeminiClient:
             }
 
     def _build_prompt(self, songs: List[Dict[str, str]]) -> str:
-        prompt = """
-    Analyze the following songs for mood and emotional themes. For each song, use web search to find relevant snippets about its meaning and mood. Classify the overall mood as one of: happy, neutral, sad, nostalgic, hopeful, anxious. 
+        prompt = '''
+Analyze the following songs for mood and emotional themes. For each song, use web search to find relevant snippets about its meaning and mood. Classify the overall mood as one of: happy, neutral, sad, nostalgic, hopeful, anxious.
 
-    Return a JSON object with this exact structure:
-    {
-    "inferred_mood": "one of: happy, neutral, sad, nostalgic, hopeful, anxious",
-    "summary": "brief analysis of the overall mood",
-    "recommendations": {
-        "similar_mood": ["Song Title by Artist", "Song Title by Artist", "Song Title by Artist", "Song Title by Artist"],
-        "uplifting_alternatives": ["Song Title by Artist", "Song Title by Artist", "Song Title by Artist", "Song Title by Artist"]
-    },
-    "message": "personalized message based on the mood"
-    }
+Return a JSON object with this exact structure:
+{
+  "inferred_mood": "one of: happy, neutral, sad, nostalgic, hopeful, anxious",
+  "summary": "brief analysis of the overall mood",
+  "recommendations": {
+    "similar_mood": [
+      {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"}
+    ],
+    "uplifting_alternatives": [
+      {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"}
+    ]
+  },
+  "message": "personalized message based on the mood"
+}
 
-    Songs to analyze:
-    """
+Songs to analyze:
+'''
         for song in songs:
             prompt += f"\nSong: {song['title']} by {song['artist']}"
         return prompt

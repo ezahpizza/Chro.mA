@@ -36,8 +36,12 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
       "inferred_mood": "string", // e.g. "happy", "sad", etc.
       "summary": "string",
       "recommendations": {
-        "similar_mood": ["string"],
-        "uplifting_alternatives": ["string"]
+        "similar_mood": [
+          { "title": "string", "artist": "string" }
+        ],
+        "uplifting_alternatives": [
+          { "title": "string", "artist": "string" }
+        ]
       },
       "message": "string"
     }
@@ -111,8 +115,12 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
         "inferred_mood": "string",
         "summary": "string",
         "recommendations": {
-          "similar_mood": ["string"],
-          "uplifting_alternatives": ["string"]
+        "similar_mood": [
+          { "title": "string", "artist": "string" }
+        ],
+        "uplifting_alternatives": [
+          { "title": "string", "artist": "string" }
+        ]
         },
         "message": "string"
       }
@@ -138,8 +146,12 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
 - **MoodRecommendation**
   ```json
   {
-    "similar_mood": ["string"],
-    "uplifting_alternatives": ["string"]
+    "similar_mood": [
+      { "title": "string", "artist": "string" }
+    ],
+    "uplifting_alternatives": [
+      { "title": "string", "artist": "string" }
+    ]
   }
   ```
 - **MoodResponse**
@@ -147,7 +159,14 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
   {
     "inferred_mood": "string",
     "summary": "string",
-    "recommendations": MoodRecommendation,
+    "recommendations": {
+      "similar_mood": [
+        { "title": "string", "artist": "string" }
+      ],
+      "uplifting_alternatives": [
+        { "title": "string", "artist": "string" }
+      ]
+    },
     "message": "string"
   }
   ```
@@ -165,8 +184,22 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
   {
     "playlist_id": "string",
     "playlist_name": "string",
-    "tracks": [SongInput],
-    "mood_response": MoodResponse
+    "tracks": [
+      { "title": "string", "artist": "string" }
+    ],
+    "mood_response": {
+      "inferred_mood": "string",
+      "summary": "string",
+      "recommendations": {
+        "similar_mood": [
+          { "title": "string", "artist": "string" }
+        ],
+        "uplifting_alternatives": [
+          { "title": "string", "artist": "string" }
+        ]
+      },
+      "message": "string"
+    }
   }
   ```
 
