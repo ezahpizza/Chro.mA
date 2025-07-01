@@ -1,0 +1,16 @@
+.dockerignore
+.git
+.gitignore
+future-updates.txt
+.env
+
+*.pyc
+__pycache__/
+.pytest_cache/
+*.log
+
+.venv/
+
+notebooks/
+*.ipynb
+storage/
