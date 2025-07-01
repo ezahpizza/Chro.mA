@@ -38,7 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_spotify.router, tags=["auth"])
-app.include_router(mood.router, prefix="/mood", tags=["mood"])
+app.include_router(mood.router, tags=["mood"])
 app.include_router(playlists.router, prefix="/playlist", tags=["playlist"])
 
 
