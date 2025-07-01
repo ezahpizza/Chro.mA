@@ -61,18 +61,16 @@ async def create_playlist(
     if not token_doc:
         raise HTTPException(status_code=404, detail="Spotify user not found")
 
-    # Always fetch the user id from the access token (do not use the query param as user id)
     user_id = await spotify_client.get_user_id(token_doc["access_token"])
     if not user_id:
         raise HTTPException(status_code=400, detail="Failed to fetch Spotify user id")
 
-    # Get Spotify URIs for the provided tracks (input is tracks: List[SongInput])
     track_dicts = [track.model_dump() for track in req.tracks]
     uris = await spotify_client.get_uris_for_tracks(token_doc["access_token"], track_dicts)
     if not uris:
         raise HTTPException(status_code=400, detail="No valid Spotify URIs found for provided tracks")
 
-    # Create the playlist
+    # create 
     playlist = await spotify_client.create_playlist(
         access_token=token_doc["access_token"],
         user_id=user_id,
@@ -86,7 +84,7 @@ async def create_playlist(
 
     playlist_id = playlist["id"]
 
-    # Add tracks to the playlist
+    # add tracks 
     success = await spotify_client.add_tracks_to_playlist(token_doc["access_token"], playlist_id, uris)
     if not success:
         raise HTTPException(status_code=400, detail="Failed to add tracks to playlist")

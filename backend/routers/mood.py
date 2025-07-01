@@ -37,6 +37,7 @@ async def analyze_manual_songs(request: ManualMoodRequest):
 
 @router.get("/songs/spotify", response_model=MoodResponse)
 async def analyze_spotify_songs(spotify_user_id: str = Query(...), count: int = Query(1, ge=1, le=10)):
+    
     # retrieve access token
     token_doc = await mongodb.get_token_collection().find_one({"spotify_user_id": spotify_user_id})
     if not token_doc:
