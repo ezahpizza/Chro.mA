@@ -49,6 +49,37 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
     - `count` (int, optional, default: 1, min: 1, max: 10): Number of recent tracks to analyze
   - **Response:** Same as above
 
+## Playlist Analysis Endpoint (`/playlist/analyze`)
+
+- **POST `/playlist/analyze`**
+  - Analyze the mood of a Spotify playlist by its ID.
+  - **Request Body:**
+    ```json
+    {
+      "playlist_id": "string"
+    }
+    ```
+  - **Response:**
+    ```json
+    {
+      "playlist_id": "string",
+      "playlist_name": "string",
+      "tracks": [
+        { "title": "string", "artist": "string" }
+      ],
+      "mood_response": {
+        "inferred_mood": "string",
+        "summary": "string",
+        "recommendations": {
+          "similar_mood": ["string"],
+          "uplifting_alternatives": ["string"]
+        },
+        "message": "string"
+      }
+    }
+    ```
+
+
 ### Music Mood Schemas
 
 - **SongInput**
@@ -78,6 +109,24 @@ psykSpot is a production-ready FastAPI backend for an AI-powered music mood and 
     "summary": "string",
     "recommendations": MoodRecommendation,
     "message": "string"
+  }
+  ```
+
+  ### Playlist Analysis Schemas
+
+- **PlaylistAnalysisRequest**
+  ```json
+  {
+    "playlist_id": "string"
+  }
+  ```
+- **PlaylistAnalysisResponse**
+  ```json
+  {
+    "playlist_id": "string",
+    "playlist_name": "string",
+    "tracks": [SongInput],
+    "mood_response": MoodResponse
   }
   ```
 

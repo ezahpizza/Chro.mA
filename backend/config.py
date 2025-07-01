@@ -13,11 +13,8 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY : str = Field(..., env="GOOGLE_API_KEY")
     ENV: Optional[str] = Field("dev", env="ENV")
     DEBUG: bool = Field(False, env="DEBUG")
-    CORS_ORIGINS: List[str] = Field(
-        default=[
-            "http://localhost:8080",
-            "http://localhost:5173",
-        ],
+    CORS_ORIGINS: str = Field(
+        default="http://localhost:8080",
         env="CORS_ORIGINS"
     )
     GEMINI_MODEL: str = Field("gemini-2.5-flash-preview-04-17", env="GEMINI_MODEL")

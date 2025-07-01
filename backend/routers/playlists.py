@@ -1,5 +1,6 @@
+import httpx
 from fastapi import APIRouter, Query, Body, HTTPException
-from models.mood import ManualMoodRequest, MoodResponse
+from models.mood import PlaylistAnalysisResponse, SongInput, MoodResponse
 from services.serpapi_client import SerpClient
 from services.gemini_client import GeminiClient
 from services.spotify_client import SpotifyClient
@@ -11,7 +12,6 @@ serpapi_client = SerpClient()
 gemini_client = GeminiClient()
 spotify_client = SpotifyClient()
 
-#helper fucntion for gemini input
 def build_gemini_input_from_serp_results(serp_results):
     songs_for_gemini = []
     for item in serp_results:
@@ -24,31 +24,30 @@ def build_gemini_input_from_serp_results(serp_results):
         })
     return songs_for_gemini
 
-@router.post("/songs/manual", response_model=MoodResponse)
-async def analyze_manual_songs(request: ManualMoodRequest):
-    # get mood snippets
-    song_dicts = [song.model_dump() for song in request.songs]
-    serp_results = await serpapi_client.get_song_mood(song_dicts)
-    # classify mood and generate response
-    songs_for_gemini = build_gemini_input_from_serp_results(serp_results)
-    mood_result = await gemini_client.classify_mood_and_generate_response(songs_for_gemini)
-    mood_response = MoodResponse(**mood_result)
-    return mood_response
 
-@router.get("/songs/spotify", response_model=MoodResponse)
-async def analyze_spotify_songs(spotify_user_id: str = Query(...), count: int = Query(1, ge=1, le=10)):
+@router.get("/analyze/{playlist_id}", response_model=PlaylistAnalysisResponse)
+async def analyze_playlist(
+    playlist_id: str,
+    spotify_user_id: str = Query(...)
+    ):
     # retrieve access token
     token_doc = await mongodb.get_token_collection().find_one({"spotify_user_id": spotify_user_id})
     if not token_doc:
         raise HTTPException(status_code=404, detail="Spotify user not found")
-    # get recent tracks
-    tracks = await spotify_client.get_recent_tracks(token_doc["access_token"], count)
-
-    song_dicts = [{"title": t["name"], "artist": t["artists"][0]["name"]} for t in tracks]
+    
+    # Fetch playlist tracks from Spotify
+    tracks = await spotify_client.get_playlist_tracks(token_doc["access_token"], playlist_id)
+    song_inputs = [SongInput(title=t["name"], artist=t["artists"][0]["name"]) for t in tracks if t.get("name") and t.get("artists")]
+    song_dicts = [song.model_dump() for song in song_inputs]
     serp_results = await serpapi_client.get_song_mood(song_dicts)
     songs_for_gemini = build_gemini_input_from_serp_results(serp_results)
     mood_result = await gemini_client.classify_mood_and_generate_response(songs_for_gemini)
     mood_response = MoodResponse(**mood_result)
-    return mood_response
-
+    playlist_name = tracks[0]["album"]["name"] if tracks and "album" in tracks[0] and "name" in tracks[0]["album"] else ""
+    return PlaylistAnalysisResponse(
+        playlist_id=playlist_id,
+        playlist_name=playlist_name,
+        tracks=song_inputs,
+        mood_response=mood_response
+    )
 

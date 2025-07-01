@@ -7,7 +7,15 @@ class SongInput(BaseModel):
 
 class ManualMoodRequest(BaseModel):
     songs: List[SongInput]
-    userid: str = None
+
+class PlaylistAnalysisRequest(BaseModel):
+    playlist_id: str
+
+class PlaylistAnalysisResponse(BaseModel):
+    playlist_id: str
+    playlist_name: str
+    tracks: List[SongInput]
+    mood_response: 'MoodResponse'
 
 class MoodRecommendation(BaseModel):
     similar_mood: List[str]  

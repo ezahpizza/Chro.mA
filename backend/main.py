@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from db.mongodb import mongodb
-from routers import auth_spotify, mood
+from routers import auth_spotify, mood, playlists
 
 load_dotenv()
 
@@ -31,7 +31,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[settings.CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,6 +39,8 @@ app.add_middleware(
 
 app.include_router(auth_spotify.router, tags=["auth"])
 app.include_router(mood.router, prefix="/mood", tags=["mood"])
+app.include_router(playlists.router, prefix="/playlist", tags=["playlist"])
+
 
 @app.get("/")
 async def root():
