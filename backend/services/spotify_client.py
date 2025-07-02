@@ -89,4 +89,14 @@ class SpotifyClient:
         async with httpx.AsyncClient() as client:
             resp = await client.post(url, headers=headers, json=payload)
             return resp.status_code in (200, 201)
+        
+    async def get_user_playlists(self, access_token: str, user_id: str, limit: int = 20, offset: int = 0):
+        url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        params = {"limit": limit, "offset": offset}
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=headers, params=params)
+            if resp.status_code != 200:
+                return None
+            return resp.json()
 

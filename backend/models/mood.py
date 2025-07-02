@@ -20,6 +20,11 @@ class PlaylistCreateResponse(BaseModel):
     external_url: str
     message: str
 
+class PlaylistSummaryResponse(BaseModel):
+    id: str
+    name: str
+    images: List[dict]
+
 class MoodRecommendation(BaseModel):
     similar_mood: List[SongInput]  
     uplifting_alternatives: List[SongInput]  

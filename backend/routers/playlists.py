@@ -1,31 +1,19 @@
 from fastapi import APIRouter, Query, Body, HTTPException
-from typing import Optional
-from models.mood import SongInput, MoodResponse, PlaylistCreateResponse, PlaylistCreateRequest
+from typing import Optional, List
+from models.mood import SongInput, PlaylistCreateResponse, PlaylistSummaryResponse, PlaylistCreateRequest
 from models.session import SessionMoodResponse
-from app.state.session_memory import create_session_id, store_analysis, get_analysis, delete_analysis
+from app.state.session_memory import get_analysis, delete_analysis
 from services.serpapi_client import SerpClient
 from services.gemini_client import GeminiClient
 from services.spotify_client import SpotifyClient
-from db.mongodb import mongodb
+from utils.spotify_helpers import get_spotify_access_token, analyze_and_store_session
+
 
 router = APIRouter()
 
 serpapi_client = SerpClient()
 gemini_client = GeminiClient()
 spotify_client = SpotifyClient()
-
-def build_gemini_input_from_serp_results(serp_results):
-    songs_for_gemini = []
-    for item in serp_results:
-        song = item.get("song", {})
-        snippets = item.get("snippets", [])
-        songs_for_gemini.append({
-            "title": song.get("title"),
-            "artist": song.get("artist"),
-            "snippets": snippets
-        })
-    return songs_for_gemini
-
 
 @router.get("/analyze/{playlist_id}", response_model=SessionMoodResponse)
 async def analyze_playlist(
@@ -34,24 +22,36 @@ async def analyze_playlist(
     ):
 
     # retrieve access token
-    token_doc = await mongodb.get_token_collection().find_one({"spotify_user_id": spotify_user_id})
-    if not token_doc:
-        raise HTTPException(status_code=404, detail="Spotify user not found")
+    access_token = await get_spotify_access_token(spotify_user_id)
     
     #  get tracks from Spotify
-    tracks = await spotify_client.get_playlist_tracks(token_doc["access_token"], playlist_id)
+    tracks = await spotify_client.get_playlist_tracks(access_token, playlist_id)
     song_inputs = [SongInput(title=t["name"], artist=t["artists"][0]["name"]) for t in tracks if t.get("name") and t.get("artists")]
 
-    song_dicts = [song.model_dump() for song in song_inputs]
-    serp_results = await serpapi_client.get_song_mood(song_dicts)
+    result = await analyze_and_store_session(song_inputs, serpapi_client, gemini_client)
+    return SessionMoodResponse(session_id=result["session_id"], mood_response=result["mood_response"])
 
-    songs_for_gemini = build_gemini_input_from_serp_results(serp_results)
-    mood_result = await gemini_client.classify_mood_and_generate_response(songs_for_gemini)
-    
-    mood_response = MoodResponse(**mood_result)
-    session_id = create_session_id()
-    store_analysis(session_id, mood_response.model_dump())
-    return SessionMoodResponse(session_id=session_id, mood_response=mood_response.model_dump())
+@router.get("/user", response_model=List[PlaylistSummaryResponse])
+async def get_user_playlists(
+    spotify_user_id: str = Query(...),
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0)
+):
+
+    access_token = await get_spotify_access_token(spotify_user_id)
+
+    playlists = await spotify_client.get_user_playlists(access_token, spotify_user_id, limit, offset)
+    if playlists is None:
+        raise HTTPException(status_code=400, detail="Failed to fetch playlists from Spotify")
+
+    summaries = []
+    for item in playlists.get("items", []):
+        summaries.append({
+            "id": item.get("id"),
+            "name": item.get("name"),
+            "images": item.get("images", [])
+        })
+    return summaries
 
 @router.post("/create", response_model=PlaylistCreateResponse)
 async def create_playlist(
@@ -60,10 +60,8 @@ async def create_playlist(
     session_id: Optional[str] = Query(None),
     delete_after_use: Optional[bool] = Query(False)
 ):
-    # retrieve access token
-    token_doc = await mongodb.get_token_collection().find_one({"spotify_user_id": spotify_user_id})
-    if not token_doc:
-        raise HTTPException(status_code=404, detail="Spotify user not found")
+    
+    access_token = await get_spotify_access_token(spotify_user_id)
 
     # if session_id is provided, use session cache for tracks
     tracks_to_add = []
@@ -80,16 +78,16 @@ async def create_playlist(
     else:
         tracks_to_add = [track.model_dump() for track in req.tracks]
 
-    user_id = await spotify_client.get_user_id(token_doc["access_token"])
+    user_id = await spotify_client.get_user_id(access_token)
     if not user_id:
         raise HTTPException(status_code=400, detail="Failed to fetch Spotify user id")
 
-    uris = await spotify_client.get_uris_for_tracks(token_doc["access_token"], tracks_to_add)
+    uris = await spotify_client.get_uris_for_tracks(access_token, tracks_to_add)
     if not uris:
         raise HTTPException(status_code=400, detail="No valid Spotify URIs found for provided tracks")
 
     playlist = await spotify_client.create_playlist(
-        access_token=token_doc["access_token"],
+        access_token=access_token,
         user_id=user_id,
         name=req.name,
         description=req.description,
@@ -101,7 +99,7 @@ async def create_playlist(
 
     playlist_id = playlist["id"]
 
-    success = await spotify_client.add_tracks_to_playlist(token_doc["access_token"], playlist_id, uris)
+    success = await spotify_client.add_tracks_to_playlist(access_token, playlist_id, uris)
     if not success:
         raise HTTPException(status_code=400, detail="Failed to add tracks to playlist")
 
