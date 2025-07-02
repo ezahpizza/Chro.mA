@@ -1,6 +1,6 @@
-import httpx
 from fastapi import APIRouter, Query, Body, HTTPException
-from models.mood import PlaylistAnalysisResponse, SongInput, MoodResponse, PlaylistCreateResponse, PlaylistCreateRequest
+from typing import Optional
+from models.mood import SongInput, MoodResponse, PlaylistCreateResponse, PlaylistCreateRequest
 from models.session import SessionMoodResponse
 from app.state.session_memory import create_session_id, store_analysis, get_analysis, delete_analysis
 from services.serpapi_client import SerpClient
@@ -32,27 +32,26 @@ async def analyze_playlist(
     playlist_id: str,
     spotify_user_id: str = Query(...)
     ):
+
     # retrieve access token
     token_doc = await mongodb.get_token_collection().find_one({"spotify_user_id": spotify_user_id})
     if not token_doc:
         raise HTTPException(status_code=404, detail="Spotify user not found")
-    # Fetch playlist tracks from Spotify
+    
+    #  get tracks from Spotify
     tracks = await spotify_client.get_playlist_tracks(token_doc["access_token"], playlist_id)
     song_inputs = [SongInput(title=t["name"], artist=t["artists"][0]["name"]) for t in tracks if t.get("name") and t.get("artists")]
+
     song_dicts = [song.model_dump() for song in song_inputs]
     serp_results = await serpapi_client.get_song_mood(song_dicts)
+
     songs_for_gemini = build_gemini_input_from_serp_results(serp_results)
     mood_result = await gemini_client.classify_mood_and_generate_response(songs_for_gemini)
+    
     mood_response = MoodResponse(**mood_result)
     session_id = create_session_id()
     store_analysis(session_id, mood_response.model_dump())
     return SessionMoodResponse(session_id=session_id, mood_response=mood_response.model_dump())
-
-
-from fastapi import Request
-from fastapi import status
-from fastapi.responses import JSONResponse
-from typing import Optional
 
 @router.post("/create", response_model=PlaylistCreateResponse)
 async def create_playlist(
@@ -66,7 +65,7 @@ async def create_playlist(
     if not token_doc:
         raise HTTPException(status_code=404, detail="Spotify user not found")
 
-    # If session_id is provided, use session cache for tracks
+    # if session_id is provided, use session cache for tracks
     tracks_to_add = []
     if session_id:
         mood_data = get_analysis(session_id)

@@ -1,10 +1,10 @@
 from pydantic import BaseModel
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 class SessionMoodResponse(BaseModel):
     session_id: str
-    mood_response: Dict[str, Any]  # serialized MoodResponse
+    mood_response: Dict[str, Any]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         arbitrary_types_allowed = True

@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     SPOTIFY_REDIRECT_URI: str = Field(..., env="SPOTIFY_REDIRECT_URI")
     SERPAPI_KEY: str = Field(..., env="SERPAPI_KEY")
     GOOGLE_API_KEY : str = Field(..., env="GOOGLE_API_KEY")
-    ENV: Optional[str] = Field("dev", env="ENV")
     DEBUG: bool = Field(False, env="DEBUG")
     CORS_ORIGINS: str = Field(
         default="http://localhost:8080",

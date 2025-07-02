@@ -31,14 +31,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[settings.CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(auth_spotify.router, tags=["auth"])
-app.include_router(mood.router, tags=["mood"])
+app.include_router(mood.router, prefix="/songs", tags=["mood"])
 app.include_router(playlists.router, prefix="/playlist", tags=["playlist"])
 
 
