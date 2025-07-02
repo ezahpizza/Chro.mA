@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query
 from models.mood import ManualMoodRequest, SongInput
 from models.session import SessionMoodResponse
 from services.serpapi_client import SerpClient
