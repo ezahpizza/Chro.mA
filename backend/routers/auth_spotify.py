@@ -5,6 +5,7 @@ from config import settings
 from db.mongodb import mongodb
 import urllib.parse
 from utils.auth_utils import AuthUtils
+from utils.spotify_helpers import get_spotify_access_token
 
 router = APIRouter()
 
@@ -20,6 +21,13 @@ async def spotify_login():
     
     url = f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
     return RedirectResponse(url)
+
+@router.post("/logout")
+async def logout_user(spotify_user_id: str):
+    result = await mongodb.get_token_collection().delete_one({"spotify_user_id": spotify_user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found or already logged out")
+    return {"message": "Logged out successfully"}
 
 @router.get("/callback")
 async def spotify_callback(code: str):
@@ -54,3 +62,5 @@ async def spotify_callback(code: str):
 
     redirect_url = f"{FRONTEND_REDIRECT_BASE}?spotify_user_id={user_data['id']}"
     return RedirectResponse(url=redirect_url)
+
+

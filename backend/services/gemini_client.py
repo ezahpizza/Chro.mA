@@ -27,7 +27,7 @@ class GeminiClient:
                 "You are a music mood analysis expert.",
                 "Given a list of songs, analyze their mood and emotional themes using web search snippets.",
                 "Classify the overall mood as one of: happy, neutral, sad, nostalgic, hopeful, anxious.",
-                "Suggest similar mood songs and uplifting alternatives.",
+                "Suggest 5 similar mood songs and uplifting alternatives each.",
                 "Return a JSON object with keys: inferred_mood, summary, recommendations (with similar_mood and uplifting_alternatives as arrays of objects with title and artist), and message. Each song in recommendations must be an object: {\"title\": ..., \"artist\": ...}. Do not use string format for songs."
             ],
             model=Gemini(id=self.gemini_model),
@@ -107,16 +107,22 @@ class GeminiClient:
         prompt = '''
 Analyze the following songs for mood and emotional themes. For each song, use web search to find relevant snippets about its meaning and mood. Classify the overall mood as one of: happy, neutral, sad, nostalgic, hopeful, anxious.
 
-Return a JSON object with this exact structure:
+Return a JSON object with this exact structure, with 5 songs each for both categories:
 {
   "inferred_mood": "one of: happy, neutral, sad, nostalgic, hopeful, anxious",
   "summary": "brief analysis of the overall mood",
   "recommendations": {
     "similar_mood": [
       {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"},
       {"title": "Song Title", "artist": "Artist Name"}
     ],
     "uplifting_alternatives": [
+      {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"},
+      {"title": "Song Title", "artist": "Artist Name"},
       {"title": "Song Title", "artist": "Artist Name"},
       {"title": "Song Title", "artist": "Artist Name"}
     ]
