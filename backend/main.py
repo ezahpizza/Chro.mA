@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     await mongodb.disconnect()
 
 app = FastAPI(
-    title="psykSpot",
+    title="Chro.mA",
     description="MVP backend for mood analysis and recommendations",
     version="0.1.0",
     lifespan=lifespan,
@@ -44,7 +44,7 @@ app.include_router(playlists.router, prefix="/playlist", tags=["playlist"])
 
 @app.get("/")
 async def root():
-    return {"message": "psykSpot running"}
+    return {"message": "Chro.mA running"}
 
 @app.get("/health")
 async def health_check():
