@@ -158,7 +158,7 @@ const AboutUs = () => {
 
           {/* Call to Action */}
           <section className="text-center bg-gradient-to-r from-persian-indigo to-rose-pink p-8 rounded-xl text-almond-white">
-            <h2 className="text-2xl font-biorhyme font-bold mb-4">Ready to Explore Your Musical Mind?</h2>
+            <h2 className="text-2xl font-biorhyme font-bold mb-4">Ready to Hum to Your Brain's Moods?</h2>
             <p className="font-biorhyme mb-6 opacity-90">
               Join thousands of users who are discovering new insights about themselves through their music. 
               Start your journey of musical self-discovery today.
