@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -16,7 +15,7 @@ class Settings(BaseSettings):
         default="http://localhost:8080",
         env="CORS_ORIGINS"
     )
-    GEMINI_MODEL: str = Field("gemini-2.5-flash-preview-04-17", env="GEMINI_MODEL")
+    GEMINI_MODEL: str = Field("gemini-2.5-flash", env="GEMINI_MODEL")
 
     class Config:
         env_file = ".env"
